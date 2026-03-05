@@ -74,10 +74,10 @@ export class ArticlesService {
     }
   }
 
-  async getArticleBySlug(slug: string): Promise<void> {
+  async getArticleBySlug(slug: string): Promise<Article | null> {
     try {
-      const response = await baseService.get<Article[]>(`/articles/${slug}`)
-      this._articles.value = response.data
+      const response = await baseService.get<Article>(`/articles/${slug}`)
+      return response.data;
     } catch (err) {
       this._error.value = err as Error
     } finally {

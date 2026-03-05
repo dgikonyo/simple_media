@@ -1,0 +1,28 @@
+/* =============================
+   App Container Styles
+============================= */
+@import "tailwindcss";
+@import "./base.css";
+
+/* 1. Custom Utility: Hide Scrollbar 
+   Used for the Category Filter row in the 'Discover' section */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* 2. Custom Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 3. Card Hover Effects 
+   This adds a subtle glow that is hard to do with pure Tailwind */
+.card-glow:hover {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
+}

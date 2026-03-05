@@ -1,0 +1,53 @@
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: media_db_dev
+    environment:
+      POSTGRES_USER: root_user
+      POSTGRES_PASSWORD: root_secret
+      POSTGRES_DB: media_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root_user -d media_db"]
+      interval: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  backend-api:
+    container_name: media_api_dev
+    build: ./akhri-backend
+    user: "root"
+    environment:
+      DATABASE_HOST: postgres_db
+      DATABASE_PORT: 5432
+      DATABASE_USER: root_user
+      DATABASE_PASSWORD: root_secret
+      DATABASE_NAME: media_db
+    volumes:
+      - ./akhri-backend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend:
+    container_name: media_frontend_dev
+    build: ./akhri
+    user: "root"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./akhri:/app
+      - /app/node_modules
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

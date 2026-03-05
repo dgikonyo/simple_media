@@ -1,0 +1,30 @@
+/* --------------------------------
+   Base Setup: Variables & Fonts
+-------------------------------- */
+@import "tailwindcss";
+
+/* 1. Tailwind Base Layers */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2. Global Element Resets */
+html {
+  /* Prevents layout shift when scrollbars appear */
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0a0a0a; /* Matches the dark theme in the image */
+  color: #A1A1AA;            /* Default gray text color */
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 3. Text Selection Color */
+::selection {
+  background-color: #FFD700; /* The brand-gold color */
+  color: #000000;
+}

@@ -1,30 +1,87 @@
 /* --------------------------------
    Base Setup: Variables & Fonts
 -------------------------------- */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 1. Tailwind Base Layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* ============================================================
+   THEME VARIABLES
+   ============================================================ */
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #f8f8f8;
+  --surface: #ffffff;
+  --border: #e0e0e0;
+  --text: #0a0a0a;
+  --text-muted: #6b6b6b;
+  --text-inverse: #ffffff;
+  --accent: #0a0a0a;
+  --accent-hover: #333333;
+  --input-bg: #ffffff;
+  --nav-bg: #ffffff;
+  --nav-border: #e0e0e0;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
 
-/* 2. Global Element Resets */
-html {
-  /* Prevents layout shift when scrollbars appear */
-  scrollbar-gutter: stable;
+[data-theme='dark'] {
+  --bg: #0a0a0a;
+  --bg-subtle: #111111;
+  --surface: #161616;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --text-muted: #888888;
+  --text-inverse: #0a0a0a;
+  --accent: #f0f0f0;
+  --accent-hover: #cccccc;
+  --input-bg: #1a1a1a;
+  --nav-bg: #0a0a0a;
+  --nav-border: #2a2a2a;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+* {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.15s ease;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #0a0a0a; /* Matches the dark theme in the image */
-  color: #A1A1AA;            /* Default gray text color */
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  line-height: 1.7;
 }
 
-/* 3. Text Selection Color */
-::selection {
-  background-color: #FFD700; /* The brand-gold color */
-  color: #000000;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.navbar-brand,
+.btn,
+.badge,
+label,
+.form-label {
+  font-family: 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+a {
+  color: var(--text);
+}
+
+a:hover {
+  color: var(--text-muted);
+}
+
+hr {
+  border-color: var(--border);
+  opacity: 1;
 }

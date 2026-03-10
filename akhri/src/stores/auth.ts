@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
-import { baseService } from '@/api/base.service'
+import { baseService } from '@/api/services/base.service'
 import type { UserEntity, RegisterUserDto, GetRoleDto, GetCountryDto, Country, Role } from '@/api/services/types'
 
 export const useAuthStore = defineStore('auth', () => {

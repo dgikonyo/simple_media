@@ -56,15 +56,18 @@
             </form>
         </div>
     </div>
+    <Footer />
 </template>
 
 <script>
 import { supabase } from '@/lib/supabaseClient';
 import apiClient from '@/services/apiClient';
 import { useUserRegistration } from '@/composables/useUserRegistration';
+import Footer from '@/components/Footer.vue';
 
 export default {
     name: 'RegisterUserForm',
+    components: { Footer },
 
     data() {
         return {

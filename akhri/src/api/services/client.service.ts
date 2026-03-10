@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '../../lib/supabaseClient'
 import { useAuthStore } from '@/stores/auth'
 
 const apiClient = axios.create({

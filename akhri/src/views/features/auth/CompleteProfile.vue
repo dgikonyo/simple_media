@@ -1,40 +1,40 @@
 <template>
     <div class="auth-page">
-        <div class="auth-card">
-            <div class="auth-card__header">
-                <h2 class="auth-card__title">Complete Your Profile</h2>
-                <p class="auth-card__subtitle">We need a few more details</p>
-            </div>
+        <div class="auth-box" style="max-width:28rem;">
 
-            <form class="form" @submit.prevent="submitForm">
-                <div class="form__group">
-                    <label class="form__label form__label--required" for="dob">Date of Birth</label>
-                    <input id="dob" class="form__input" type="date" v-model="form.dob" required />
+            <div class="auth-box__title">Finish setup</div>
+            <div class="auth-box__sub">A few details to complete your profile</div>
+
+            <form @submit.prevent="submit">
+
+                <div class="mb-3">
+                    <label class="form-label">Date of Birth *</label>
+                    <input type="date" class="form-control" v-model="form.dob" required />
                 </div>
 
-                <div class="form__group">
-                    <label class="form__label form__label--required" for="role">Role</label>
-                    <select id="role" class="form__select" v-model="form.roleId" required>
-                        <option value="" disabled>Select your role</option>
-                        <option v-for="role in roles" :key="role.id" :value="role.id">
-                            {{ role.name }}
-                        </option>
+                <div class="mb-3">
+                    <label class="form-label">Role *</label>
+                    <select class="form-select" v-model="form.roleId" required>
+                        <option value="" disabled>Select role</option>
+                        <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
                     </select>
                 </div>
 
-                <div class="form__group">
-                    <label class="form__label" for="country">Country (optional)</label>
-                    <select id="country" class="form__select" v-model="form.countryId">
-                        <option value="">Select your country</option>
-                        <option v-for="country in countries" :key="country.id" :value="country.id">
-                            {{ country.countryName }}
-                        </option>
+                <div class="mb-4">
+                    <label class="form-label">Country <span
+                            style="color:var(--text-muted);font-weight:400;text-transform:none;">(optional)</span></label>
+                    <select class="form-select" v-model="form.countryId">
+                        <option value="">Select country</option>
+                        <option v-for="c in countries" :key="c.id" :value="c.id">{{ c.countryName }}</option>
                     </select>
                 </div>
 
-                <button class="btn btn--primary btn--full" type="submit" :disabled="loading">
-                    {{ loading ? 'Saving...' : 'Complete Registration' }}
+                <p v-if="error" class="form-error">{{ error }}</p>
+
+                <button type="submit" class="btn-dark-theme btn w-100" :disabled="loading">
+                    {{ loading ? 'Saving…' : 'Complete setup' }}
                 </button>
+
             </form>
         </div>
     </div>
@@ -50,43 +50,35 @@ export default {
         return {
             roles: [],
             countries: [],
-            form: {
-                dob: '',
-                roleId: '',
-                countryId: '',
-            },
+            form: { dob: '', roleId: '', countryId: '' },
             loading: false,
+            error: null,
         };
     },
 
     async mounted() {
-        await this.fetchDropdowns();
+        try {
+            const store = useAuthStore();
+            const [roles, countries] = await Promise.all([
+                store.fetchRoles(),
+                store.fetchCountries(),
+            ]);
+            this.roles = roles;
+            this.countries = countries;
+        } catch (err) {
+            console.error('Failed to load options:', err);
+        }
     },
 
     methods: {
-        async fetchDropdowns() {
-            try {
-                const authStore = useAuthStore();
-                const [rolesRes, countriesRes] = await Promise.all([
-                    authStore.fetchRoles(),
-                    authStore.fetchCountries(),
-                ]);
-                this.roles = rolesRes;
-                this.countries = countriesRes;
-            } catch (error) {
-                console.error('Failed to load roles/countries', error);
-            }
-        },
-
-        async submitForm() {
+        async submit() {
             this.loading = true;
+            this.error = null;
             try {
-                const authStore = useAuthStore();
-                await authStore.completeProfile(this.form);
-                this.$router.push('/dashboard');
-            } catch (error) {
-                console.error('Profile completion failed', error);
-                alert('Failed to save profile. Please try again.');
+                await useAuthStore().completeProfile(this.form);
+                this.$router.push('/');
+            } catch (err) {
+                this.error = err?.response?.data?.message ?? 'Something went wrong. Please try again.';
             } finally {
                 this.loading = false;
             }

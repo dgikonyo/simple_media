@@ -1,78 +1,82 @@
 <template>
-    <div class="editor-page">
-        <header class="editor-header">
-            <div class="editor-header__brand">
-                <span class="editor-header__name">NewsPortal</span>
-                <span class="editor-header__divider">|</span>
-                <span class="editor-header__context">Drafting in Articles</span>
-            </div>
-            <div class="editor-header__actions">
-                <button class="btn btn--ghost" @click="saveArticle('draft')" :disabled="isSubmitting">
-                    Save Draft
+    <div class="editor-wrap">
+
+        <!-- Editor top bar -->
+        <div class="editor-bar">
+            <span class="editor-bar__title">New Article</span>
+            <div class="editor-bar__actions">
+                <span v-if="saveStatus" class="text-muted" style="font-size:0.75rem;font-family:sans-serif;">
+                    {{ saveStatus }}
+                </span>
+                <button class="btn-outline-theme btn btn-sm" @click="publish('draft')" :disabled="saving">
+                    Save draft
                 </button>
-                <button class="btn btn--publish" @click="saveArticle('published')" :disabled="isSubmitting">
-                    {{ isSubmitting ? 'Publishing...' : 'Publish' }}
+                <button class="btn-dark-theme btn btn-sm" @click="publish('published')" :disabled="saving">
+                    {{ saving ? 'Publishing…' : 'Publish' }}
                 </button>
             </div>
-        </header>
+        </div>
 
-        <div class="editor-main">
-            <div class="editor-content">
-                <div class="editor-content__inner">
-                    <input v-model="title" type="text" placeholder="Title" class="editor-title" />
-                    <textarea v-model="excerpt" placeholder="Write a short subtitle..." rows="2"
-                        class="editor-excerpt"></textarea>
+        <div class="editor-body">
 
-                    <div class="editor-body">
-                        <bubble-menu v-if="editor" :editor="editor" :tippy-options="{ duration: 100 }"
-                            class="bubble-menu">
-                            <button @click="editor.chain().focus().toggleBold().run()">B</button>
-                            <button @click="editor.chain().focus().toggleItalic().run()">I</button>
-                            <button @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
-                            <button @click="editor.chain().focus().toggleBlockquote().run()">"</button>
-                        </bubble-menu>
-                        <editor-content :editor="editor" />
-                    </div>
-                </div>
-            </div>
+            <!-- Main writing area -->
+            <div class="editor-main">
+                <div class="editor-inner">
 
-            <aside class="editor-sidebar">
-                <div class="editor-sidebar__section">
-                    <h3 class="editor-sidebar__section-title">Article Settings</h3>
-                    <label class="editor-sidebar__label">Cover Image URL</label>
-                    <input v-model="imageUrl" type="text" placeholder="https://..." class="editor-sidebar__input" />
-                    <div v-if="imageUrl" class="editor-sidebar__preview">
-                        <img :src="imageUrl" alt="Cover preview" />
-                    </div>
-                </div>
+                    <textarea class="editor-field-title" rows="2" v-model="form.title" placeholder="Title"
+                        @input="autoResize"></textarea>
 
-                <hr class="editor-sidebar__divider" />
+                    <textarea class="editor-field-excerpt" rows="2" v-model="form.excerpt"
+                        placeholder="Short description (optional)" @input="autoResize"></textarea>
 
-                <div class="editor-sidebar__section">
-                    <div class="editor-ai-header">
-                        <h3 class="editor-sidebar__section-title">AI Insights</h3>
-                        <button class="editor-ai-btn" @click="runAIAnalysis" :disabled="isAnalyzing">
-                            {{ isAnalyzing ? 'Analyzing...' : 'Run Analysis ✨' }}
-                        </button>
-                    </div>
-
-                    <div v-if="summarisedStory">
-                        <div class="editor-ai-summary">
-                            <p class="editor-ai-summary__label">AI Summary</p>
-                            <p class="editor-ai-summary__text">"{{ summarisedStory }}"</p>
-                        </div>
-                        <div v-if="analysisData" class="editor-ai-grid">
-                            <div v-for="(val, key) in analysisData" :key="key" class="editor-ai-stat">
-                                <p class="editor-ai-stat__key">{{ String(key).replace('_', ' ') }}</p>
-                                <p class="editor-ai-stat__val">{{ val }}</p>
+                    <div v-if="editor">
+                        <bubble-menu :editor="editor" v-if="editor.isActive">
+                            <div class="d-flex bg-dark rounded overflow-hidden shadow">
+                                <button class="btn btn-sm btn-dark px-2 py-1"
+                                    @click="editor.chain().focus().toggleBold().run()"
+                                    :class="{ active: editor.isActive('bold') }"><b>B</b></button>
+                                <button class="btn btn-sm btn-dark px-2 py-1"
+                                    @click="editor.chain().focus().toggleItalic().run()"
+                                    :class="{ active: editor.isActive('italic') }"><i>I</i></button>
+                                <button class="btn btn-sm btn-dark px-2 py-1"
+                                    @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
+                                <button class="btn btn-sm btn-dark px-2 py-1"
+                                    @click="editor.chain().focus().toggleBlockquote().run()">"</button>
                             </div>
-                        </div>
+                        </bubble-menu>
+                        <editor-content :editor="editor" class="editor-prose" />
                     </div>
-                    <p v-else class="editor-ai-empty">
-                        Click Run Analysis to generate summaries and metadata.
-                    </p>
+
                 </div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="editor-sidebar">
+
+                <div>
+                    <span class="editor-sidebar__label">Cover Image URL</span>
+                    <input type="url" class="form-control form-control-sm" v-model="form.imageUrl"
+                        placeholder="https://..." @change="previewImage = form.imageUrl" />
+                    <div class="editor-sidebar__preview mt-2">
+                        <img v-if="previewImage" :src="previewImage" alt="cover" />
+                        <span v-else>No image</span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="editor-sidebar__label">Slug</span>
+                    <input type="text" class="form-control form-control-sm" v-model="form.slug"
+                        placeholder="auto-generated" />
+                    <div class="form-text" style="font-size:0.7rem;color:var(--text-muted)">Leave blank to auto-generate
+                        from title</div>
+                </div>
+
+                <div v-if="error">
+                    <p class="form-error mb-0">{{ error }}</p>
+                </div>
+
             </aside>
+
         </div>
     </div>
 </template>
@@ -82,27 +86,20 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import { BubbleMenu } from '@tiptap/extension-bubble-menu';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { ArticlesService } from '@/api/services/features/articles.service';
 import { useAuthStore } from '@/stores/auth';
-
-const articleService = new ArticlesService();
+import apiClient from '@/api/services/client.service';
 
 export default {
     name: 'CreateArticleView',
     components: { EditorContent, BubbleMenu },
 
-    // useEditor is a composable — MUST run in setup(), not mounted()
-    // setup() return values are merged into the component instance,
-    // so this.editor works normally everywhere else in Options API.
     setup() {
         const editor = useEditor({
             extensions: [
                 StarterKit,
-                Placeholder.configure({ placeholder: 'Tell your story...' }),
+                Placeholder.configure({ placeholder: 'Tell your story…' }),
             ],
-            editorProps: {
-                attributes: { class: 'editor-prose' },
-            },
+            editorProps: { attributes: { class: 'editor-prose' } },
             content: '',
         });
         return { editor };
@@ -110,13 +107,16 @@ export default {
 
     data() {
         return {
-            title: '',
-            excerpt: '',
-            imageUrl: '',
-            isAnalyzing: false,
-            isSubmitting: false,
-            summarisedStory: '',
-            analysisData: null,
+            form: {
+                title: '',
+                excerpt: '',
+                imageUrl: '',
+                slug: '',
+            },
+            previewImage: '',
+            saving: false,
+            saveStatus: '',
+            error: null,
         };
     },
 
@@ -125,53 +125,42 @@ export default {
     },
 
     methods: {
-        async runAIAnalysis() {
-            if (!this.editor?.getText().trim()) {
-                alert('Please write something first!');
-                return;
-            }
-            this.isAnalyzing = true;
-            try {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                this.summarisedStory = 'This article explores the intersection of high-end journalism and AI automation in 2026.';
-                this.analysisData = {
-                    sentiment: 'Professional',
-                    reading_level: 'Advanced',
-                    key_entities: 'Technology, Journalism',
-                    fact_check_flags: 0,
-                };
-            } finally {
-                this.isAnalyzing = false;
-            }
+        autoResize(e) {
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
         },
 
-        async saveArticle(status) {
-            if (!this.title) { alert('Title is required'); return; }
+        slugify(text) {
+            return text.toLowerCase().trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-');
+        },
 
-            const authStore = useAuthStore();
-            if (!authStore.user) {
-                alert('Your session is missing. Please log in again.');
-                return;
-            }
+        async publish(status) {
+            if (!this.form.title.trim()) { this.error = 'Title is required.'; return; }
+            if (!this.editor?.getText().trim()) { this.error = 'Article body cannot be empty.'; return; }
 
-            this.isSubmitting = true;
+            this.saving = true;
+            this.error = null;
+            this.saveStatus = '';
+
             try {
                 const payload = {
-                    title: this.title,
-                    body: this.editor?.getHTML() || '',
-                    excerpt: this.excerpt,
-                    imageUrl: this.imageUrl,
+                    title: this.form.title.trim(),
+                    slug: this.form.slug.trim() || this.slugify(this.form.title),
+                    excerpt: this.form.excerpt.trim() || null,
+                    imageUrl: this.form.imageUrl.trim() || null,
+                    body: this.editor.getHTML(),
                     status,
-                    summarisedStory: this.summarisedStory,
-                    analysisData: this.analysisData || {},
                 };
-                const response = await articleService.createArticle(payload);
-                this.$router.push(`/article/${response.slug}`);
-            } catch (error) {
-                console.error('Save failed:', error);
-                alert('Failed to save article. Check console.');
+
+                await apiClient.post('/articles', payload);
+                this.saveStatus = status === 'published' ? 'Published ✓' : 'Draft saved ✓';
+                setTimeout(() => this.$router.push('/'), 800);
+            } catch (err) {
+                this.error = err?.response?.data?.message ?? 'Failed to save. Please try again.';
             } finally {
-                this.isSubmitting = false;
+                this.saving = false;
             }
         },
     },

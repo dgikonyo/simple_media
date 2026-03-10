@@ -48,19 +48,21 @@
     </main>
     <CTASection />
   </div>
+  <Footer></Footer>
 </template>
 
 <script>
-import api from '@/api/client.service';
+import api from '@/api/services/client.service';
 import SectionHeader from '@/components/SectionHeader.vue';
 import MediaCard from '@/components/MediaCard.vue';
 import ArticleRow from '@/components/ArticleRow.vue';
 import VideoCard from '@/components/VideoCard.vue';
 import CTASection from '@/components/CTASection.vue';
+import Footer from '@/components/Footer.vue';
 
 export default {
   name: 'NewsView',
-  components: { SectionHeader, MediaCard, ArticleRow, VideoCard, CTASection },
+  components: { SectionHeader, MediaCard, ArticleRow, VideoCard, CTASection,Footer },
 
   data() {
     return {

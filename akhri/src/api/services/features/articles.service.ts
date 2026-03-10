@@ -1,4 +1,4 @@
-import { baseService } from '@/api/base.service'
+import { baseService } from '@/api/services/base.service'
 import type { Article, CreateArticleDto, Video } from '../types'
 import type { Ref } from 'vue'
 import { ref } from 'vue'

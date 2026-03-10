@@ -115,6 +115,7 @@ export default {
         },
         initials() {
             if (!this.user) return '?';
+            console.log(this.user)
             return `${this.user.firstName?.[0] ?? ''}${this.user.lastName?.[0] ?? ''}`.toUpperCase() || '?';
         },
     },

@@ -35,7 +35,10 @@ import { useAuthStore } from '@/stores/auth';
 export default {
     name: 'LoginView',
     methods: {
-        signIn() { useAuthStore().signInWithGoogle(); },
+        signIn() {
+            const authStore = useAuthStore();
+            authStore.signInWithGoogle();
+        },
     },
 };
 </script>

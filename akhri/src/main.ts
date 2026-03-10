@@ -11,14 +11,20 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const app = createApp(App)
+const pinia = createPinia()
 
-app.use(createPinia())
+app.use(pinia)
 app.use(router)
+
+const authStore = useAuthStore(pinia)
+authStore.fetchUser().finally(() => {
+  app.mount('#app')
+})
 
 // Initialize auth state
 supabase.auth.onAuthStateChange((event, session) => {
-  const authStore = useAuthStore()
-  authStore.user = session?.user || null
+  authStore.session = session;
+  authStore.user = session?.user ?? null
 })
 
-app.mount('#app')
+

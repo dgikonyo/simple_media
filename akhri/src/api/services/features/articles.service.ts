@@ -74,12 +74,13 @@ export class ArticlesService {
     }
   }
 
-  async getArticleBySlug(slug: string): Promise<Article | null> {
+  async getArticleBySlug(slug: string): Promise<Article> {
     try {
       const response = await baseService.get<Article>(`/articles/${slug}`)
       return response.data;
     } catch (err) {
       this._error.value = err as Error
+      throw err;  
     } finally {
       this.setLoading(false)
     }

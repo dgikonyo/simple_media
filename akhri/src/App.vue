@@ -1,13 +1,18 @@
 <script>
-import NavBar from '@/components/NavBar.vue';
+import Navbar from './components/Navbar.vue';
+import { useAuthStore } from './stores/auth';
 
 export default {
   name: 'App',
-  components: { NavBar },
+  components: { Navbar },
+  mounted() {
+    const authStore = useAuthStore();
+    authStore.fetchUser();
+  }
 };
 </script>
 
 <template>
-  <NavBar />
+  <Navbar />
   <router-view />
 </template>

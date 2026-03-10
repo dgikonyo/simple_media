@@ -40,7 +40,10 @@ import { useAuthStore } from '@/stores/auth';
 export default {
     name: 'RegisterView',
     methods: {
-        signUp() { useAuthStore().signInWithGoogle(); },
+        signUp() {
+            const authStore = useAuthStore();
+            authStore.signInWithGoogle();
+        },
     },
 };
 </script>

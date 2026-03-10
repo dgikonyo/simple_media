@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { User } from '@supabase/supabase-js'
+import { type Session, type User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { baseService } from '@/api/services/base.service'
 import type { UserEntity, RegisterUserDto, GetRoleDto, GetCountryDto, Country, Role } from '@/api/services/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
+  const session = ref<Session | null>(null)
   const loading = ref(false)
 
   async function signInWithGoogle() {
@@ -32,12 +33,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function signOut() {
     await supabase.auth.signOut()
     user.value = null
+    session.value = null
   }
 
   // Fetch user from session
   async function fetchUser() {
-    const { data: { user: sessionUser }, } = await supabase.auth.getUser()
-    user.value = sessionUser
+    const { data } = await supabase.auth.getSession()
+    session.value = data.session;
+    user.value = data.session?.user ?? null
   }
 
   async function fetchCountries() {
@@ -63,5 +66,5 @@ export const useAuthStore = defineStore('auth', () => {
   // Initialize user on store creation
   fetchUser();
 
-  return { user, loading, signInWithGoogle, signOut, fetchUser, getToken, checkUserExists, registerUser, fetchCountries, fetchRoles, completeProfile }
+  return { user, session, loading, signInWithGoogle, signOut, fetchUser, getToken, checkUserExists, registerUser, fetchCountries, fetchRoles, completeProfile }
 });

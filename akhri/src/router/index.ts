@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   // Public
   { path: '/', name: 'articles', component: AllArticlesView },
-  { path: '/articles/:slug', name: 'article', component: () => import('@/views/features/article/ArticlesView.vue') },
+  { path: '/articles/:slug', name: 'article', component: () => import('@/views/features/article/ArticlesView.vue'), props: true },
 
   // Auth
   { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
@@ -45,11 +45,8 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  // const { data } = await supabase.auth.getSession()
-  // const isLoggedIn = !!data.session
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
 
-  // If the store isn't loaded yet (shouldn't happen after Step 2), load it
   if (!authStore.session) {
     await authStore.fetchUser()
   }

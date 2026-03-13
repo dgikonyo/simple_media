@@ -1,12 +1,3 @@
-/* --------------------------------
-   Base Setup: Variables & Fonts
--------------------------------- */
-@import 'tailwindcss';
-
-/* 1. Tailwind Base Layers */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 /* ============================================================
    THEME VARIABLES
    ============================================================ */

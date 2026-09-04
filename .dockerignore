@@ -1,0 +1,36 @@
+# dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# compiled output
+dist
+build
+
+# environment files (unless you want them in the image)
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.git
+.gitignore
+.vscode
+.idea
+*.iml
+.DS_Store
+*.log
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# test
+coverage
+.nyc_output
+
+# misc
+*.pem
+*.p12
+Thumbs.db

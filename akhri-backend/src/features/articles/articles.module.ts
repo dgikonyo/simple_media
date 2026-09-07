@@ -7,11 +7,13 @@ import { ArticleAnalysis } from './entities/article-analysis.entity';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { UserEntity } from '../users/entities/user.entity';
+import { ArticlesAnalysisService } from '../articles-analysis/articles-analysis.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [AuthModule, TypeOrmModule.forFeature([Article, ArticleAnalysis, UserEntity])],
+  imports: [AuthModule, TypeOrmModule.forFeature([Article, ArticleAnalysis, UserEntity]), HttpModule],
   controllers: [ArticlesController],
-  providers: [ArticlesService],
+  providers: [ArticlesService, ArticlesAnalysisService],
   exports: [ArticlesService],
 })
 export class ArticlesModule { }

@@ -80,7 +80,7 @@ export class ArticlesService {
       return response.data;
     } catch (err) {
       this._error.value = err as Error
-      throw err;  
+      throw err;
     } finally {
       this.setLoading(false)
     }
@@ -93,7 +93,6 @@ export class ArticlesService {
     try {
       const response = await baseService.post<Article>('/articles', articleData)
 
-      console.log(response.data)
       this._articles.value.push(response.data)
       return response.data;
     } catch (err) {

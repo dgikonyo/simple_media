@@ -24,3 +24,15 @@ export interface ArticleResponse {
   blogger: BloggerSummary | null;
   analysis: AnalysisSummary | null;
 }
+
+export type AnalysisResult = {
+  excerpt: string;
+  summarisedStory: string;
+  analysisData: {
+    wordCount: number;
+    readingTimeMinutes: number;
+    sentiment: string;
+    keywords: string[];
+    generatedAt: string;
+  };
+};

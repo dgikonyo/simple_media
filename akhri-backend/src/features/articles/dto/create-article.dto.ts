@@ -3,11 +3,11 @@ import { IsString, IsNotEmpty, IsOptional, IsUUID, IsJSON, IsObject } from 'clas
 export class CreateArticleDto {
   @IsString()
   @IsNotEmpty()
-  title?: string;
+  title!: string;
 
   @IsString()
   @IsNotEmpty()
-  body?: string;
+  body!: string;
 
   @IsString()
   @IsOptional()

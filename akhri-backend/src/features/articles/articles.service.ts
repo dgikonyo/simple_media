@@ -10,13 +10,16 @@ import { Article } from './entities/article.entity';
 import { ArticleAnalysis } from './entities/article-analysis.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ArticlesAnalysisService } from '../articles-analysis/articles-analysis.service';
+import { AnalysisResult } from './dto/article-response.dto';
 
 @Injectable()
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
   constructor(private dataSource: DataSource,
     @InjectRepository(UserEntity) private readonly usersRepository: Repository<UserEntity>,
-    @InjectRepository(Article) private readonly articleRepository: Repository<Article>) { }
+    @InjectRepository(Article) private readonly articleRepository: Repository<Article>,
+    private readonly analysisService: ArticlesAnalysisService) { }
 
   async create(createArticleDto: CreateArticleDto, bloggerId: string,): Promise<Article> {
     const startTime = Date.now();
@@ -28,15 +31,7 @@ export class ArticlesService {
     await queryRunner.startTransaction();
 
     try {
-      this.logger.debug(`Transaction started for article: ${JSON.stringify(createArticleDto)}`);
-      // 2. Prepare the Article
-      const { analysisData, summarisedStory, ...articleData } =
-        createArticleDto;
-
-      const newArticle = new Article();
-      Object.assign(newArticle, articleData);
-
-      // newArticle.blogger = { id: bloggerId } as UserEntity;
+      //1. Find the blogger
       const blogger = await this.usersRepository.findOne({
         where: { id: bloggerId }
       })
@@ -46,21 +41,48 @@ export class ArticlesService {
         throw new NotFoundException('User not found in database');
       }
 
+      this.logger.debug(`Transaction started for article: ${JSON.stringify(createArticleDto)}`);
+      // 2. Prepare the Article
+      const { analysisData, summarisedStory, ...articleData } = createArticleDto;
+
+      let aiAnalysis: AnalysisResult | null = null;
+
+      try {
+        aiAnalysis = await this.analysisService.analyzeArticle(articleData.title, articleData.body);
+        this.logger.debug(`AI analysis generated for article: ${articleData.title}`);
+      } catch (error: any) {
+        this.logger.error(`AI analysis failed: ${error.message}`, error.stack);
+      }
+
+      const newArticle = new Article();
+      Object.assign(newArticle, articleData);
       newArticle.blogger = blogger;
+
+      if (aiAnalysis) {
+        newArticle.excerpt = aiAnalysis.excerpt;
+      } else {
+        newArticle.excerpt = createArticleDto.excerpt;
+      }
 
       const savedArticle = await queryRunner.manager.save(newArticle);
       this.logger.log(`Article saved with id: ${savedArticle.id}`);
 
       if (analysisData || summarisedStory) {
-        const analysis = new ArticleAnalysis();
-        analysis.article = savedArticle; // Link the relationship
-        analysis.differencesData = analysisData || {};
-        analysis.summarisedStory = summarisedStory;
+        if (aiAnalysis) {
+          const analysis = new ArticleAnalysis();
+          analysis.article = savedArticle;
+          analysis.summarisedStory = aiAnalysis.summarisedStory;
+          analysis.excerpt = aiAnalysis.excerpt;
+          analysis.word_count = aiAnalysis.analysisData.wordCount;
+          analysis.reading_time_minutes = aiAnalysis.analysisData.readingTimeMinutes;
+          analysis.sentiment = aiAnalysis.analysisData.sentiment;
+          analysis.keywords = aiAnalysis.analysisData.keywords;
+          analysis.analysis_generated_at = new Date(aiAnalysis.analysisData.generatedAt);
 
-        await queryRunner.manager.save(analysis);
-
-        savedArticle.analysis = analysis;
-        this.logger.debug(`Analysis saved for article id: ${savedArticle.id}`);
+          await queryRunner.manager.save(analysis);
+          savedArticle.analysis = analysis;
+          this.logger.debug(`Analysis saved for article id: ${savedArticle.id}`);
+        }
       }
 
       // 5. Commit Transaction

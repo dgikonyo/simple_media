@@ -21,30 +21,27 @@ export class ArticlesService {
     @InjectRepository(Article) private readonly articleRepository: Repository<Article>,
     private readonly analysisService: ArticlesAnalysisService) { }
 
-  async create(createArticleDto: CreateArticleDto, bloggerId: string,): Promise<Article> {
+  async create(createArticleDto: CreateArticleDto, bloggerId: string): Promise<Article> {
     const startTime = Date.now();
-    this.logger.log(`Creating article: title="${createArticleDto}", bloggerId="${bloggerId}"`);
+    this.logger.log(`Creating article: title="${createArticleDto.title}", bloggerId="${bloggerId}"`);
 
-    // 1. Start a Transaction
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      //1. Find the blogger
       const blogger = await this.usersRepository.findOne({
-        where: { id: bloggerId }
-      })
+        where: { id: bloggerId },
+      });
 
       if (!blogger) {
         this.logger.warn(`Article creation blocked: user not found id=${bloggerId}`);
         throw new NotFoundException('User not found in database');
       }
 
-      this.logger.debug(`Transaction started for article: ${JSON.stringify(createArticleDto)}`);
-      // 2. Prepare the Article
-      const { analysisData, summarisedStory, ...articleData } = createArticleDto;
+      this.logger.debug(`Transaction started for article: ${createArticleDto.title}`);
 
+      const { analysisData, summarisedStory, ...articleData } = createArticleDto;
       let aiAnalysis: AnalysisResult | null = null;
 
       try {
@@ -58,66 +55,53 @@ export class ArticlesService {
       Object.assign(newArticle, articleData);
       newArticle.blogger = blogger;
 
+      // Map AI Analysis properties directly onto the Article based on the new schema
       if (aiAnalysis) {
         newArticle.excerpt = aiAnalysis.excerpt;
+        newArticle.summarisedStory = aiAnalysis.summarisedStory;
+        newArticle.sentiment = aiAnalysis.analysisData.sentiment;
+        newArticle.keywords = aiAnalysis.analysisData.keywords;
+        newArticle.wordCount = aiAnalysis.analysisData.wordCount;
+        newArticle.readingTimeMinutes = aiAnalysis.analysisData.readingTimeMinutes;
+        newArticle.analysisGeneratedAt = new Date(aiAnalysis.analysisData.generatedAt);
       } else {
-        newArticle.excerpt = createArticleDto.excerpt;
+        newArticle.excerpt = createArticleDto.excerpt || undefined;
       }
+
+      // Initialize the ArticleAnalysis table for storing differences/history
+      const analysis = new ArticleAnalysis();
+      analysis.summarisedStory = aiAnalysis?.summarisedStory || summarisedStory;
+      analysis.differencesData = analysisData || {};
+
+      // Because `cascade: true` is set, assigning this will save both at once
+      newArticle.analysis = analysis;
 
       const savedArticle = await queryRunner.manager.save(newArticle);
       this.logger.log(`Article saved with id: ${savedArticle.id}`);
 
-      if (analysisData || summarisedStory) {
-        if (aiAnalysis) {
-          const analysis = new ArticleAnalysis();
-          analysis.article = savedArticle;
-          analysis.summarisedStory = aiAnalysis.summarisedStory;
-          analysis.excerpt = aiAnalysis.excerpt;
-          analysis.word_count = aiAnalysis.analysisData.wordCount;
-          analysis.reading_time_minutes = aiAnalysis.analysisData.readingTimeMinutes;
-          analysis.sentiment = aiAnalysis.analysisData.sentiment;
-          analysis.keywords = aiAnalysis.analysisData.keywords;
-          analysis.analysis_generated_at = new Date(aiAnalysis.analysisData.generatedAt);
-
-          await queryRunner.manager.save(analysis);
-          savedArticle.analysis = analysis;
-          this.logger.debug(`Analysis saved for article id: ${savedArticle.id}`);
-        }
-      }
-
-      // 5. Commit Transaction
       await queryRunner.commitTransaction();
-
       const duration = Date.now() - startTime;
       this.logger.log(`Article created successfully: id=${savedArticle.id}, duration=${duration}ms`);
 
-
       return savedArticle;
     } catch (err: any) {
-      // 6. Rollback if anything fails
       await queryRunner.rollbackTransaction();
-
       this.logger.error(
-        `Failed to create article: title="${createArticleDto}", bloggerId="${bloggerId}"`,
+        `Failed to create article: title="${createArticleDto.title}", bloggerId="${bloggerId}"`,
         err.stack,
       );
-
-      throw new InternalServerErrorException(
-        'Article creation failed. Database reverted.',
-      );
+      throw new InternalServerErrorException('Article creation failed. Database reverted.');
     } finally {
-      // 7. Release connection
       await queryRunner.release();
     }
   }
 
   async findAll(): Promise<Article[]> {
     const startTime = Date.now();
-    this.logger.log('Fetching all articles with blogger relations');
+    this.logger.log('Fetching all articles');
 
     try {
-      const articles = await this.dataSource.getRepository(Article).find({
-        relations: ['blogger'],
+      const articles = await this.articleRepository.find({
         order: { createdAt: 'DESC' },
       });
 
@@ -126,11 +110,7 @@ export class ArticlesService {
 
       return articles;
     } catch (err: any) {
-      this.logger.error(
-        'Failed to retrieve articles from database',
-        err.stack,
-      );
-
+      this.logger.error('Failed to retrieve articles from database', err.stack);
       throw new InternalServerErrorException('Could not fetch articles. Please try again later.');
     }
   }
@@ -152,19 +132,11 @@ export class ArticlesService {
 
       return articleData;
     } catch (err: any) {
-      // If it's already a NotFoundException, just rethrow it so it doesn't get logged as a 500 error
       if (err instanceof NotFoundException) {
         throw err;
       }
-
-      this.logger.error(
-        `Failed to fetch article: slug="${slug}"`,
-        err.stack,
-      );
-
-      throw new InternalServerErrorException(
-        'An error occurred while retrieving the article.',
-      );
+      this.logger.error(`Failed to fetch article: slug="${slug}"`, err.stack);
+      throw new InternalServerErrorException('An error occurred while retrieving the article.');
     }
   }
 }

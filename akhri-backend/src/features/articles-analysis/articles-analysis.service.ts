@@ -86,13 +86,24 @@ export class ArticlesAnalysisService {
             const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
 
             if (jsonMatch) {
-                parsed = JSON.parse(jsonMatch[0]);
+                let jsonString = jsonMatch[0]
+                    .replace(/,\s*}/g, '}') // Remove trailing commas before closing brace
+                    .replace(/,\s*]/g, ']'); // Remove trailing commas before closing bracket
+
+                parsed = JSON.parse(jsonString);
             } else {
                 throw new Error('No JSON object found in response');
             }
         } catch (error: any) {
             this.logger.error(`Ollama JSON parse error for article: ${title}`, error.stack);
-            throw new Error(`${error.message}`);
+            parsed = {
+                excerpt: body.substring(0, 100) + '...',
+                summarisedStory: 'AI summary could not be parsed.',
+                analysisData: {
+                    sentiment: 'neutral',
+                    keywords: ['article'],
+                },
+            };
         }
 
         return {

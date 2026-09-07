@@ -15,40 +15,74 @@ import { ArticleAnalysis } from './article-analysis.entity';
 @Entity('articles')
 export class Article {
   @PrimaryGeneratedColumn()
-  id!: number;                    // always set by DB after save
+  id!: number;
 
-  @Column()
-  title!: string;                 // required
+  @Column({ type: 'varchar', length: 255 })
+  title!: string;
 
-  @Column({ unique: true })
-  slug!: string;                  // required, auto-generated
+  @Column({ type: 'varchar', length: 255, unique: true })
+  slug!: string;
 
-  @Column('text')
-  body!: string;                  // required
+  @Column({ type: 'text' })
+  body!: string;
 
-  @Column({ nullable: true })
-  excerpt?: string;               // truly optional
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  excerpt?: string;
 
-  @Column({ name: 'image_url', nullable: true })
-  imageUrl?: string;              // truly optional
+  @Column({ name: 'image_url', type: 'varchar', length: 500, nullable: true })
+  imageUrl?: string;
 
-  @Column({ default: 'draft' })
-  status!: string;                // always has default
+  @Column({ type: 'varchar', length: 20, default: 'draft' })
+  status!: string;
 
-  @ManyToOne(() => UserEntity)
+  // --- Denormalized Counters ---
+  @Column({ name: 'view_count', type: 'int', default: 0 })
+  viewCount!: number;
+
+  @Column({ name: 'like_count', type: 'int', default: 0 })
+  likeCount!: number;
+
+  @Column({ name: 'comment_count', type: 'int', default: 0 })
+  commentCount!: number;
+
+  @Column({ name: 'search_vector', type: 'tsvector', nullable: true })
+  searchVector?: any;
+
+  // --- AI Analysis Fields (Moved from ArticleAnalysis) ---
+  @Column({ name: 'summarised_story', type: 'text', nullable: true })
+  summarisedStory?: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  sentiment?: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  keywords?: string[];
+
+  @Column({ name: 'word_count', type: 'int', nullable: true })
+  wordCount?: number;
+
+  @Column({ name: 'reading_time_minutes', type: 'int', nullable: true })
+  readingTimeMinutes?: number;
+
+  @Column({ name: 'analysis_generated_at', type: 'timestamptz', nullable: true })
+  analysisGeneratedAt?: Date;
+
+  // --- Relations & Timestamps ---
+  @ManyToOne(() => UserEntity, { eager: true })
   @JoinColumn({ name: 'blogger_id' })
-  blogger!: UserEntity;           // always required
+  blogger!: UserEntity;
 
   @OneToOne(() => ArticleAnalysis, (analysis) => analysis.article, {
     cascade: true,
+    eager: true,
   })
-  analysis?: ArticleAnalysis;     // truly optional — not every article has analysis
+  analysis?: ArticleAnalysis;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt!: Date;               // always set by DB
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt!: Date;               // always set by DB
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt!: Date;
 
   @BeforeInsert()
   generateSlug() {

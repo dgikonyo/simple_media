@@ -34,8 +34,11 @@ export class ArticlesAnalysisService {
                     model: this.ollamaModel,
                     prompt: prompt,
                     stream: false,
+                    format: 'json',
                 }),
             );
+
+            this.logger.log(response.data);
 
             return response.data.response;
         } catch (error: any) {
@@ -75,8 +78,14 @@ export class ArticlesAnalysisService {
             }
 
             Here is the article to analyze:
-            Title: "{{title}}"
-            Body: "{{body}}"`;
+            Title: "${title}"
+            Body: "${body}"`;
+            
+        if (prompt.includes('{{title}}') || prompt.includes('{{body}}')) {
+            throw new Error('Prompt placeholders were not interpolated');
+        }
+
+        this.logger.debug(`Sending prompt to Ollama (length=${prompt.length}):\n${prompt}`);
 
         const aiResponse = await this.generate(prompt);
 
@@ -85,17 +94,16 @@ export class ArticlesAnalysisService {
         try {
             const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
 
-            if (jsonMatch) {
-                let jsonString = jsonMatch[0]
-                    .replace(/,\s*}/g, '}') // Remove trailing commas before closing brace
-                    .replace(/,\s*]/g, ']'); // Remove trailing commas before closing bracket
-
-                parsed = JSON.parse(jsonString);
-            } else {
+            if (!jsonMatch) {
                 throw new Error('No JSON object found in response');
             }
+
+            const jsonString = this.repairJson(jsonMatch[0]);
+            parsed = JSON.parse(jsonString);
+
         } catch (error: any) {
             this.logger.error(`Ollama JSON parse error for article: ${title}`, error.stack);
+            this.logger.error(`JSON parse failed. Raw response:\n${aiResponse}`);
             parsed = {
                 excerpt: body.substring(0, 100) + '...',
                 summarisedStory: 'AI summary could not be parsed.',
@@ -117,5 +125,19 @@ export class ArticlesAnalysisService {
                 generatedAt,
             },
         };
+    }
+
+    private repairJson(raw: string): string {
+        return raw
+            // Remove trailing commas before } or ]
+            .replace(/,\s*([}\]])/g, '$1')
+            // Replace smart quotes the model sometimes emits
+            .replace(/[\u201C\u201D]/g, '"')
+            .replace(/[\u2018\u2019]/g, "'")
+            // Remove single-line comments (some models add // ...)
+            .replace(/\/\/.*$/gm, '')
+            // Remove markdown fences just in case
+            .replace(/```json|```/g, '')
+            .trim();
     }
 }

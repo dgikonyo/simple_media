@@ -148,9 +148,8 @@ export default {
                 const payload = {
                     title: this.form.title.trim(),
                     slug: this.form.slug.trim() || this.slugify(this.form.title),
-                    excerpt: this.form.excerpt.trim() || null,
                     imageUrl: this.form.imageUrl.trim() || null,
-                    body: this.editor.getHTML(),
+                    body: this.editor.getText({ blockSeparator: '\n\n' }),
                     status,
                 };
 

@@ -55,7 +55,7 @@ export class Article {
   @Column({ type: 'varchar', length: 20, nullable: true })
   sentiment?: string;
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column('text', { array: true, nullable: true })
   keywords?: string[];
 
   @Column({ name: 'word_count', type: 'int', nullable: true })
